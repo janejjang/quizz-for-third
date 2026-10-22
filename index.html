@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>알파벳 탐험대! 26자 진단 퀴즈 (구글 시트 연동)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Gaegu & Noto Sans KR -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            pink: '#FF8FAB',
+                            yellow: '#FFD166',
+                            green: '#06D6A0',
+                            blue: '#118AB2',
+                            purple: '#A2D2FF',
+                            bg: '#FFF9F2'
+                        }
+                    },
+                    fontFamily: {
+                        gaegu: ['Gaegu', 'cursive'],
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #FFF9F2;
+            background-image: radial-gradient(#FFD166 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .font-kids {
+            font-family: 'Gaegu', cursive;
+        }
+
+        .btn-bounce {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .btn-bounce:active {
+            transform: scale(0.96) translateY(2px);
+            box-shadow: 0px 2px 0px rgba(0,0,0,0.1) !important;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .card-3d {
+            box-shadow: 0 10px 0 #E5D5C5, 0 15px 20px rgba(0,0,0,0.08);
+        }
+        
+        .option-btn {
+            box-shadow: 0 6px 0 #CBD5E1;
+        }
+        .option-btn:hover {
+            box-shadow: 0 8px 0 #94A3B8;
+        }
+        .option-btn:active {
+            box-shadow: 0 2px 0 #94A3B8;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-3 sm:p-6 text-slate-800">
+
+    <!-- Main Container -->
+    <div id="app" class="w-full max-w-xl bg-white rounded-3xl card-3d border-4 border-amber-200 p-4 sm:p-8 relative overflow-hidden my-auto">
+
+        <!-- Top Right Teacher Dashboard Button -->
+        <button onclick="openTeacherAuthModal()" class="absolute top-4 right-4 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-bold text-xs sm:text-sm px-3 py-1.5 rounded-full flex items-center gap-1.5 btn-bounce shadow-sm z-10">
+            <i class="fa-solid fa-lock text-amber-600"></i>
+            <span>선생님 전용</span>
+        </button>
+
+        <!-- ================= 1. START SCREEN ================= -->
+        <div id="start-screen" class="space-y-6 text-center py-2 pt-6 sm:pt-2">
+            <!-- Header Title -->
+            <div class="space-y-2">
+                <span class="inline-block bg-amber-100 text-amber-800 font-bold px-4 py-1 rounded-full text-sm sm:text-base mb-1 border border-amber-300">
+                    ✏️ 초등학교 3학년 영어 진단
+                </span>
+                <h1 class="text-4xl sm:text-5xl font-bold font-kids text-brand-blue animate-float tracking-wide">
+                    🔤 알파벳 탐험대!
+                </h1>
+                <p class="text-gray-600 text-sm sm:text-base font-medium">
+                    내 알파벳 실력을 차근차근 확인해 봐요!
+                </p>
+            </div>
+
+            <!-- Mascot Illustration -->
+            <div class="flex justify-center my-2">
+                <div class="w-28 h-28 sm:w-36 sm:h-36 bg-amber-100 rounded-full flex items-center justify-center border-4 border-amber-300 text-5xl sm:text-6xl shadow-inner animate-float">
+                    🦁
+                </div>
+            </div>
+
+            <!-- Student Info Form -->
+            <div class="bg-amber-50/80 p-4 sm:p-5 rounded-2xl border-2 border-amber-200 space-y-4 text-left">
+                <div>
+                    <label class="block text-xs sm:text-sm font-bold text-gray-700 mb-1">
+                        <i class="fa-solid fa-school text-amber-500 mr-1"></i> 학년 / 반 / 번호
+                    </label>
+                    <input type="text" id="student-class" placeholder="예: 3학년 2반 15번" 
+                        class="w-full px-4 py-2.5 rounded-xl border-2 border-amber-200 focus:border-amber-400 focus:outline-none text-sm sm:text-base bg-white font-semibold placeholder:text-gray-400">
+                </div>
+
+                <div>
+                    <label class="block text-xs sm:text-sm font-bold text-gray-700 mb-1">
+                        <i class="fa-solid fa-user text-amber-500 mr-1"></i> 이름
+                    </label>
+                    <input type="text" id="student-name" placeholder="예: 김민준" 
+                        class="w-full px-4 py-2.5 rounded-xl border-2 border-amber-200 focus:border-amber-400 focus:outline-none text-sm sm:text-base bg-white font-semibold placeholder:text-gray-400">
+                </div>
+
+                <!-- Question Count Selector -->
+                <div>
+                    <label class="block text-xs sm:text-sm font-bold text-gray-700 mb-2">
+                        <i class="fa-solid fa-list-check text-amber-500 mr-1"></i> 풀고 싶은 문제 수
+                    </label>
+                    <div class="grid grid-cols-3 gap-2" id="length-selector">
+                        <button type="button" data-count="10" onclick="selectQuizLength(10)" 
+                            class="length-btn py-2 px-3 rounded-xl border-2 font-bold text-sm transition-all bg-amber-400 border-amber-500 text-slate-900 shadow">
+                            10문항
+                        </button>
+                        <button type="button" data-count="15" onclick="selectQuizLength(15)" 
+                            class="length-btn py-2 px-3 rounded-xl border-2 font-bold text-sm transition-all bg-white border-amber-200 text-gray-600 hover:bg-amber-50">
+                            15문항
+                        </button>
+                        <button type="button" data-count="20" onclick="selectQuizLength(20)" 
+                            class="length-btn py-2 px-3 rounded-xl border-2 font-bold text-sm transition-all bg-white border-amber-200 text-gray-600 hover:bg-amber-50">
+                            20문항
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start Button -->
+            <button onclick="startQuiz()" 
+                class="w-full py-4 bg-brand-green hover:bg-emerald-500 text-white font-bold text-xl sm:text-2xl rounded-2xl border-b-4 border-emerald-700 btn-bounce shadow-lg flex items-center justify-center gap-2">
+                <span>퀴즈 시작하기!</span>
+                <i class="fa-solid fa-rocket"></i>
+            </button>
+        </div>
+
+        <!-- ================= 2. QUIZ SCREEN ================= -->
+        <div id="quiz-screen" class="hidden space-y-5">
+            <!-- Progress Bar & Header -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center text-xs sm:text-sm font-bold text-gray-600">
+                    <span id="progress-text" class="bg-sky-100 text-sky-800 px-3 py-1 rounded-full border border-sky-200">
+                        1 / 10 문제
+                    </span>
+                    <span id="score-text" class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full border border-amber-200">
+                        점수: 0점
+                    </span>
+                </div>
+                <div class="w-full bg-gray-100 h-3.5 rounded-full overflow-hidden border border-gray-200">
+                    <div id="progress-bar" class="bg-brand-blue h-full w-0 transition-all duration-300 rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- Question Box -->
+            <div class="bg-sky-50 border-2 border-sky-200 rounded-2xl p-5 sm:p-6 text-center relative space-y-4 shadow-sm">
+                <div class="inline-block bg-white text-sky-700 font-bold px-3 py-1 rounded-lg border border-sky-200 text-xs sm:text-sm">
+                    <span id="question-type-badge">유형 1</span>
+                </div>
+                
+                <h2 id="question-title" class="text-base sm:text-lg font-bold text-gray-800 leading-snug">
+                    대문자에 알맞은 소문자를 골라보세요!
+                </h2>
+
+                <div class="flex items-center justify-center gap-3 py-2">
+                    <div id="alphabet-display" class="bg-white border-4 border-sky-300 text-brand-blue rounded-3xl px-8 py-4 text-5xl sm:text-6xl font-extrabold font-kids shadow-md flex items-center justify-center min-w-[140px] min-h-[100px]">
+                        A
+                    </div>
+                    <button onclick="speakCurrentAlphabet()" title="발음 듣기"
+                        class="w-12 h-12 bg-amber-300 hover:bg-amber-400 border-2 border-amber-500 rounded-2xl flex items-center justify-center text-amber-900 text-xl btn-bounce shadow">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Answer Options -->
+            <div id="options-container" class="grid grid-cols-2 gap-3 sm:gap-4 pt-1"></div>
+        </div>
+
+        <!-- ================= 3. RESULT SCREEN ================= -->
+        <div id="result-screen" class="hidden space-y-5 text-center py-2">
+            <div class="space-y-1">
+                <span class="inline-block bg-emerald-100 text-emerald-800 font-bold px-4 py-1 rounded-full text-xs sm:text-sm border border-emerald-300">
+                    🎉 알파벳 퀴즈 완료!
+                </span>
+                <h1 class="text-3xl sm:text-4xl font-bold font-kids text-brand-blue">
+                    수고했어요, 최고예요!
+                </h1>
+            </div>
+
+            <!-- Report Card -->
+            <div id="report-card" class="bg-amber-50/90 border-2 border-amber-300 rounded-2xl p-4 sm:p-6 text-left space-y-4 shadow-sm relative overflow-hidden">
+                <div class="flex justify-between items-start border-b-2 border-amber-200 pb-3">
+                    <div>
+                        <p class="text-xs text-gray-500 font-bold">학생 정보</p>
+                        <p class="text-base sm:text-lg font-extrabold text-gray-800">
+                            <span id="result-student-info">3학년 1반 · 김민준</span>
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-gray-500 font-bold">최종 점수</p>
+                        <p class="text-2xl sm:text-3xl font-extrabold text-brand-blue">
+                            <span id="result-score">90</span><span class="text-sm text-gray-600">점</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-center text-xs sm:text-sm">
+                    <div class="bg-white p-2.5 rounded-xl border border-amber-200">
+                        <span class="text-gray-500 font-semibold block">정답 개수</span>
+                        <span id="result-correct-count" class="text-base font-bold text-emerald-600">9 / 10 문제</span>
+                    </div>
+                    <div class="bg-white p-2.5 rounded-xl border border-amber-200">
+                        <span class="text-gray-500 font-semibold block">정답률</span>
+                        <span id="result-accuracy" class="text-base font-bold text-sky-600">90%</span>
+                    </div>
+                </div>
+
+                <div class="space-y-2 pt-1">
+                    <h3 class="text-xs sm:text-sm font-bold text-gray-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-magnifying-glass text-amber-600"></i>
+                        <span>복습이 필요한 알파벳 (선생님 참고용)</span>
+                    </h3>
+
+                    <div id="review-list" class="bg-white p-3 rounded-xl border border-amber-200 min-h-[70px] max-h-[140px] overflow-y-auto no-scrollbar space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- Submit to Google Sheets Section -->
+            <div id="submit-section" class="bg-sky-50 border-2 border-sky-200 p-4 rounded-2xl space-y-3">
+                <p id="submit-status-text" class="text-xs sm:text-sm font-bold text-sky-900">
+                    📮 결과를 선생님 구글 시트로 제출해 보세요!
+                </p>
+                
+                <button id="submit-btn" onclick="submitToGoogleSheet()" 
+                    class="w-full py-3.5 bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold text-lg rounded-xl border-b-4 border-amber-600 btn-bounce shadow flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>선생님께 제출하기</span>
+                </button>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-2 pt-1">
+                <button onclick="restartQuiz()" 
+                    class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm sm:text-base rounded-xl border border-slate-300 btn-bounce flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>다시 풀기</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= 4. FEEDBACK OVERLAY ================= -->
+        <div id="feedback-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div id="feedback-card" class="bg-white rounded-3xl p-6 sm:p-8 max-w-xs w-full text-center space-y-3 card-3d border-4 transform transition-all scale-90">
+                <div id="feedback-icon" class="text-6xl sm:text-7xl">🎉</div>
+                <h3 id="feedback-title" class="text-2xl sm:text-3xl font-extrabold font-kids">정답이에요!</h3>
+                <p id="feedback-msg" class="text-sm sm:text-base font-bold text-gray-600">참 잘했어요! 👍</p>
+            </div>
+        </div>
+
+        <!-- ================= 5. TEACHER AUTH MODAL ================= -->
+        <div id="teacher-auth-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 border-4 border-amber-300 shadow-xl">
+                <div class="flex justify-between items-center border-b pb-2">
+                    <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-user-shield text-amber-500"></i> 선생님 인증
+                    </h3>
+                    <button onclick="closeTeacherAuthModal()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+                </div>
+                <p class="text-xs text-gray-600">비밀번호를 입력하여 학생 제출 결과를 실시간으로 확인하세요. (기본 비밀번호: <b>1234</b>)</p>
+                <div>
+                    <input type="password" id="teacher-password" placeholder="비밀번호 입력" 
+                        class="w-full px-4 py-2 border-2 border-amber-200 rounded-xl focus:outline-none focus:border-amber-400 font-bold text-center">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="closeTeacherAuthModal()" class="w-1/2 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl">취소</button>
+                    <button onclick="verifyTeacher()" class="w-1/2 py-2 bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold rounded-xl">확인</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 6. TEACHER DASHBOARD MODAL ================= -->
+        <div id="teacher-dashboard-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-5">
+            <div class="bg-white rounded-3xl p-4 sm:p-6 max-w-2xl w-full max-h-[85vh] flex flex-col space-y-4 border-4 border-amber-300 shadow-2xl relative">
+                <!-- Header -->
+                <div class="flex justify-between items-center border-b pb-3">
+                    <div>
+                        <h2 class="font-extrabold text-xl text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-emerald-500"></i> 실시간 학생 진단 현황
+                        </h2>
+                        <p class="text-xs text-gray-500">구글 시트에 수집된 실시간 응답 기록입니다.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="fetchTeacherData()" title="새로고침" class="px-3 py-1.5 bg-sky-100 hover:bg-sky-200 text-sky-800 text-xs font-bold rounded-lg flex items-center gap-1">
+                            <i class="fa-solid fa-rotate"></i> 새로고침
+                        </button>
+                        <button onclick="toggleGASHelp()" title="Apps Script 설정법" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold rounded-lg flex items-center gap-1">
+                            <i class="fa-solid fa-code"></i> GAS 연동 코드
+                        </button>
+                        <button onclick="closeTeacherDashboard()" class="text-gray-400 hover:text-gray-600 font-bold text-2xl px-1">&times;</button>
+                    </div>
+                </div>
+
+                <!-- Apps Script Instructions Overlay Panel -->
+                <div id="gas-help-panel" class="hidden bg-slate-900 text-slate-100 p-4 rounded-xl text-xs space-y-3 overflow-y-auto max-h-[300px]">
+                    <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                        <span class="font-bold text-amber-300">📜 Google Apps Script (Code.gs) 소스코드</span>
+                        <button onclick="toggleGASHelp()" class="text-slate-400 hover:text-white">닫기 ✖</button>
+                    </div>
+                    <p class="text-slate-300">구글 시트 -> 확장 프로그램 -> Apps Script에 아래 코드를 복사하여 넣고 <b>웹 앱으로 배포</b>하세요.</p>
+                    <pre class="bg-slate-950 p-3 rounded border border-slate-800 font-mono text-[11px] overflow-x-auto text-emerald-400">
+function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = sheet.getDataRange().getValues();
+  var rows = [];
+  for (var i = 1; i < data.length; i++) {
+    rows.push({
+      timestamp: data[i][0],
+      studentClass: data[i][1],
+      studentName: data[i][2],
+      score: data[i][3],
+      correctCount: data[i][4],
+      totalQuestions: data[i][5],
+      wrongAlphabets: data[i][6]
+    });
+  }
+  return ContentService.createTextOutput(JSON.stringify(rows))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  sheet.appendRow([
+    data.timestamp || new Date().toLocaleString(),
+    data.studentClass,
+    data.studentName,
+    data.score,
+    data.correctCount,
+    data.totalQuestions,
+    data.wrongAlphabets
+  ]);
+  return ContentService.createTextOutput(JSON.stringify({result: 'success'}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+</pre>
+                </div>
+
+                <!-- Submissions Table / Cards Container -->
+                <div id="dashboard-content" class="flex-1 overflow-y-auto no-scrollbar space-y-3 pr-1">
+                    <div class="text-center py-8 text-gray-500 font-bold text-sm">
+                        데이터를 불러오는 중입니다... ⏳
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================= JAVASCRIPT LOGIC ================= -->
+    <script>
+        // 🚨 [설정 필요] 구글 Apps Script 웹앱 배포 URL을 이곳에 넣으세요!
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpazxp7oEeKwQ4fU1qro-JScHi2tXs2r8OvcvHWuw1w12qG1G_UKCA1fdMlxD-_Ya_/exec";
+        const TEACHER_PASSWORD_DEFAULT = "1234";
+
+        // --- DATA DEFINITIONS ---
+        const ALPHABET_DATA = [
+            { upper: 'A', lower: 'a' }, { upper: 'B', lower: 'b' },
+            { upper: 'C', lower: 'c' }, { upper: 'D', lower: 'd' },
+            { upper: 'E', lower: 'e' }, { upper: 'F', lower: 'f' },
+            { upper: 'G', lower: 'g' }, { upper: 'H', lower: 'h' },
+            { upper: 'I', lower: 'i' }, { upper: 'J', lower: 'j' },
+            { upper: 'K', lower: 'k' }, { upper: 'L', lower: 'l' },
+            { upper: 'M', lower: 'm' }, { upper: 'N', lower: 'n' },
+            { upper: 'O', lower: 'o' }, { upper: 'P', lower: 'p' },
+            { upper: 'Q', lower: 'q' }, { upper: 'R', lower: 'r' },
+            { upper: 'S', lower: 's' }, { upper: 'T', lower: 't' },
+            { upper: 'U', lower: 'u' }, { upper: 'V', lower: 'v' },
+            { upper: 'W', lower: 'w' }, { upper: 'X', lower: 'x' },
+            { upper: 'Y', lower: 'y' }, { upper: 'Z', lower: 'z' }
+        ];
+
+        const CONFUSING_PAIRS = [
+            { mainUpper: 'B', mainLower: 'b', pairUpper: 'D', pairLower: 'd' },
+            { mainUpper: 'P', mainLower: 'p', pairUpper: 'Q', pairLower: 'q' },
+            { mainUpper: 'M', mainLower: 'm', pairUpper: 'W', pairLower: 'w' },
+            { mainUpper: 'E', mainLower: 'e', pairUpper: 'F', pairLower: 'f' },
+            { mainUpper: 'C', mainLower: 'c', pairUpper: 'G', pairLower: 'g' },
+            { mainUpper: 'N', mainLower: 'n', pairUpper: 'U', pairLower: 'u' },
+            { mainUpper: 'I', mainLower: 'i', pairUpper: 'L', pairLower: 'l' }
+        ];
+
+        // --- APP STATE VARIABLES ---
+        let selectedQuizLength = 10;
+        let studentName = "";
+        let studentClass = "";
+        let quizQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let wrongAnswers = [];
+        let isAnswering = false;
+        let isSubmitted = false;
+
+        // --- TTS ENGINE ---
+        function speakAlphabet(letter) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(letter);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function speakCurrentAlphabet() {
+            if (quizQuestions[currentQuestionIndex]) {
+                speakAlphabet(quizQuestions[currentQuestionIndex].speechLetter);
+            }
+        }
+
+        // --- START SCREEN LOGIC ---
+        function selectQuizLength(count) {
+            selectedQuizLength = count;
+            document.querySelectorAll('.length-btn').forEach(btn => {
+                if (parseInt(btn.dataset.count) === count) {
+                    btn.className = "length-btn py-2 px-3 rounded-xl border-2 font-bold text-sm transition-all bg-amber-400 border-amber-500 text-slate-900 shadow";
+                } else {
+                    btn.className = "length-btn py-2 px-3 rounded-xl border-2 font-bold text-sm transition-all bg-white border-amber-200 text-gray-600 hover:bg-amber-50";
+                }
+            });
+        }
+
+        function startQuiz() {
+            const classInput = document.getElementById('student-class').value.trim();
+            const nameInput = document.getElementById('student-name').value.trim();
+
+            if (!nameInput) {
+                alert("이름을 입력해 주세요! 😊");
+                document.getElementById('student-name').focus();
+                return;
+            }
+
+            studentClass = classInput || "3학년";
+            studentName = nameInput;
+
+            quizQuestions = generateQuizQuestions(selectedQuizLength);
+            currentQuestionIndex = 0;
+            score = 0;
+            wrongAnswers = [];
+            isSubmitted = false;
+
+            // Reset submit button state
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = false;
+            submitBtn.className = "w-full py-3.5 bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold text-lg rounded-xl border-b-4 border-amber-600 btn-bounce shadow flex items-center justify-center gap-2";
+            submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i><span>선생님께 제출하기</span>`;
+            document.getElementById('submit-status-text').innerText = "📮 결과를 선생님 구글 시트로 제출해 보세요!";
+
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+
+            renderQuestion();
+        }
+
+        // --- QUESTION GENERATOR ---
+        function generateQuizQuestions(total) {
+            const questions = [];
+            const shuffled = [...ALPHABET_DATA].sort(() => Math.random() - 0.5);
+
+            for (let i = 0; i < total; i++) {
+                const item = shuffled[i % shuffled.length];
+                const type = Math.floor(Math.random() * 4) + 1;
+
+                if (type === 1) {
+                    questions.push({
+                        typeBadge: "유형 1 · 소문자 찾기",
+                        title: `대문자 [ ${item.upper} ]에 짝꿍인 소문자는 무엇일까요?`,
+                        display: item.upper,
+                        correct: item.lower,
+                        options: getRandomOptions(item.lower, 'lower'),
+                        speechLetter: item.upper,
+                        itemRef: item
+                    });
+                } else if (type === 2) {
+                    questions.push({
+                        typeBadge: "유형 2 · 대문자 찾기",
+                        title: `소문자 [ ${item.lower} ]에 짝꿍인 대문자는 무엇일까요?`,
+                        display: item.lower,
+                        correct: item.upper,
+                        options: getRandomOptions(item.upper, 'upper'),
+                        speechLetter: item.lower,
+                        itemRef: item
+                    });
+                } else if (type === 3) {
+                    const idx = ALPHABET_DATA.findIndex(a => a.upper === item.upper);
+                    let seq = "";
+                    if (idx >= 1 && idx <= ALPHABET_DATA.length - 2) {
+                        seq = `${ALPHABET_DATA[idx-1].upper} - [ ? ] - ${ALPHABET_DATA[idx+1].upper}`;
+                    } else if (idx === 0) {
+                        seq = `[ ? ] - ${ALPHABET_DATA[1].upper} - ${ALPHABET_DATA[2].upper}`;
+                    } else {
+                        seq = `${ALPHABET_DATA[idx-2].upper} - ${ALPHABET_DATA[idx-1].upper} - [ ? ]`;
+                    }
+                    questions.push({
+                        typeBadge: "유형 3 · 순서 빈칸 채우기",
+                        title: `빈칸 [ ? ]에 들어갈 알맞은 알파벳은?`,
+                        display: seq,
+                        correct: item.upper,
+                        options: getRandomOptions(item.upper, 'upper'),
+                        speechLetter: item.upper,
+                        itemRef: item
+                    });
+                } else {
+                    const pairObj = CONFUSING_PAIRS[Math.floor(Math.random() * CONFUSING_PAIRS.length)];
+                    const isUpper = Math.random() > 0.5;
+                    const focusChar = isUpper ? pairObj.mainLower : pairObj.mainUpper;
+                    const correctChar = isUpper ? pairObj.mainUpper : pairObj.mainLower;
+
+                    questions.push({
+                        typeBadge: "유형 4 · 헷갈리는 알파벳",
+                        title: `헷갈리기 쉬운 알파벳! [ ${focusChar} ]의 올바른 짝꿍은?`,
+                        display: focusChar,
+                        correct: correctChar,
+                        options: getRandomOptions(correctChar, isUpper ? 'upper' : 'lower'),
+                        speechLetter: focusChar,
+                        itemRef: ALPHABET_DATA.find(a => a.upper === pairObj.mainUpper) || item
+                    });
+                }
+            }
+            return questions;
+        }
+
+        function getRandomOptions(correctValue, caseType) {
+            const set = new Set([correctValue]);
+            const pool = ALPHABET_DATA.map(a => caseType === 'upper' ? a.upper : a.lower);
+
+            while (set.size < 4) {
+                set.add(pool[Math.floor(Math.random() * pool.length)]);
+            }
+            return Array.from(set).sort(() => Math.random() - 0.5);
+        }
+
+        // --- RENDER QUESTION ---
+        function renderQuestion() {
+            isAnswering = false;
+            const q = quizQuestions[currentQuestionIndex];
+
+            document.getElementById('progress-text').innerText = `${currentQuestionIndex + 1} / ${quizQuestions.length} 문제`;
+            document.getElementById('score-text').innerText = `점수: ${score}점`;
+            document.getElementById('progress-bar').style.width = `${((currentQuestionIndex) / quizQuestions.length) * 100}%`;
+
+            document.getElementById('question-type-badge').innerText = q.typeBadge;
+            document.getElementById('question-title').innerText = q.title;
+            document.getElementById('alphabet-display').innerText = q.display;
+
+            setTimeout(() => speakCurrentAlphabet(), 300);
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            const colors = [
+                'bg-rose-100 hover:bg-rose-200 border-rose-300 text-rose-800',
+                'bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-800',
+                'bg-emerald-100 hover:bg-emerald-200 border-emerald-300 text-emerald-800',
+                'bg-sky-100 hover:bg-sky-200 border-sky-300 text-sky-800'
+            ];
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `option-btn w-full py-4 sm:py-5 rounded-2xl border-2 font-extrabold text-2xl sm:text-3xl transition-all btn-bounce ${colors[idx % colors.length]}`;
+                btn.innerText = opt;
+                btn.onclick = () => handleAnswer(opt);
+                container.appendChild(btn);
+            });
+        }
+
+        // --- ANSWER HANDLING ---
+        function handleAnswer(selectedOption) {
+            if (isAnswering) return;
+            isAnswering = true;
+
+            const q = quizQuestions[currentQuestionIndex];
+            const isCorrect = (selectedOption === q.correct);
+
+            const overlay = document.getElementById('feedback-overlay');
+            const card = document.getElementById('feedback-card');
+            const icon = document.getElementById('feedback-icon');
+            const title = document.getElementById('feedback-title');
+            const msg = document.getElementById('feedback-msg');
+
+            overlay.classList.remove('hidden');
+
+            if (isCorrect) {
+                score += Math.round(100 / quizQuestions.length);
+                card.className = "bg-white rounded-3xl p-6 sm:p-8 max-w-xs w-full text-center space-y-3 card-3d border-4 border-emerald-400 transform transition-all scale-100";
+                icon.innerText = "🎉";
+                title.innerText = "정답이에요!";
+                title.className = "text-2xl sm:text-3xl font-extrabold font-kids text-emerald-600";
+                msg.innerText = "참 잘했어요! 👍";
+
+                confetti({ particleCount: 40, spread: 50, origin: { y: 0.6 } });
+            } else {
+                wrongAnswers.push({ item: q.itemRef, userChoice: selectedOption, correctChoice: q.correct });
+                card.className = "bg-white rounded-3xl p-6 sm:p-8 max-w-xs w-full text-center space-y-3 card-3d border-4 border-rose-400 transform transition-all scale-100";
+                icon.innerText = "💪";
+                title.innerText = "아쉬워요!";
+                title.className = "text-2xl sm:text-3xl font-extrabold font-kids text-rose-500";
+                msg.innerHTML = `정답은 <span class="text-brand-blue text-xl font-bold">${q.correct}</span> 이에요!`;
+            }
+
+            speakAlphabet(isCorrect ? "Correct!" : "Try again!");
+
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                currentQuestionIndex++;
+                if (currentQuestionIndex < quizQuestions.length) {
+                    renderQuestion();
+                } else {
+                    showResultScreen();
+                }
+            }, 1200);
+        }
+
+        // --- SHOW RESULT SCREEN ---
+        function showResultScreen() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+
+            const finalScore = Math.min(100, score);
+            const correctCount = quizQuestions.length - wrongAnswers.length;
+            const accuracyPercent = Math.round((correctCount / quizQuestions.length) * 100);
+
+            document.getElementById('result-student-info').innerText = `${studentClass} · ${studentName}`;
+            document.getElementById('result-score').innerText = finalScore;
+            document.getElementById('result-correct-count').innerText = `${correctCount} / ${quizQuestions.length} 문제`;
+            document.getElementById('result-accuracy').innerText = `${accuracyPercent}%`;
+
+            confetti({ particleCount: 80, spread: 70, origin: { y: 0.5 } });
+
+            const reviewList = document.getElementById('review-list');
+            reviewList.innerHTML = '';
+
+            if (wrongAnswers.length === 0) {
+                reviewList.innerHTML = `<div class="text-center py-2 text-emerald-600 font-bold text-xs sm:text-sm">🌟 틀린 문제 없이 완벽해요!</div>`;
+            } else {
+                const seen = new Set();
+                wrongAnswers.forEach(w => {
+                    if (!seen.has(w.item.upper)) {
+                        seen.add(w.item.upper);
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = "flex items-center justify-between bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 text-xs";
+                        itemDiv.innerHTML = `
+                            <span class="font-extrabold text-brand-blue text-sm">${w.item.upper} - ${w.item.lower}</span>
+                            <span class="text-gray-500 text-[11px]">복습 권장</span>
+                        `;
+                        reviewList.appendChild(itemDiv);
+                    }
+                });
+            }
+        }
+
+        // --- SUBMIT TO GOOGLE SHEET ---
+        async function submitToGoogleSheet() {
+            if (isSubmitted) return;
+
+            const submitBtn = document.getElementById('submit-btn');
+            const statusText = document.getElementById('submit-status-text');
+
+            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_SCRIPT_ID")) {
+                alert("구글 시트 연동 URL이 설정되지 않았습니다.\n선생님 전용 모달에서 GAS 소스코드를 확인해 URL을 설정해 주세요!");
+                return;
+            }
+
+            // Lock submit button
+            submitBtn.disabled = true;
+            submitBtn.className = "w-full py-3.5 bg-gray-300 text-gray-600 font-bold text-lg rounded-xl flex items-center justify-center gap-2 cursor-not-allowed";
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>제출 중입니다...</span>`;
+
+            // Prepare Payload
+            const uniqueWrongs = Array.from(new Set(wrongAnswers.map(w => `${w.item.upper}(${w.item.lower})`))).join(', ') || '없음(만점)';
+            const payload = {
+                timestamp: new Date().toLocaleString('ko-KR'),
+                studentClass: studentClass,
+                studentName: studentName,
+                score: Math.min(100, score),
+                correctCount: quizQuestions.length - wrongAnswers.length,
+                totalQuestions: quizQuestions.length,
+                wrongAlphabets: uniqueWrongs
+            };
+
+            try {
+                // Post to Google Apps Script
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Avoid CORS pre-flight blockage
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                isSubmitted = true;
+                statusText.innerText = "✅ 성공적으로 선생님께 전달되었습니다!";
+                submitBtn.className = "w-full py-3.5 bg-emerald-500 text-white font-bold text-lg rounded-xl flex items-center justify-center gap-2 shadow";
+                submitBtn.innerHTML = `<i class="fa-solid fa-circle-check"></i><span>제출 완료!</span>`;
+
+            } catch (err) {
+                console.error("Submission Error:", err);
+                alert("제출 중 오류가 발생했습니다. 다시 시도해 주세요.");
+                submitBtn.disabled = false;
+                submitBtn.className = "w-full py-3.5 bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold text-lg rounded-xl border-b-4 border-amber-600 btn-bounce shadow flex items-center justify-center gap-2";
+                submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i><span>다시 제출하기</span>`;
+            }
+        }
+
+        // --- TEACHER MODAL & DASHBOARD LOGIC ---
+        function openTeacherAuthModal() {
+            document.getElementById('teacher-password').value = '';
+            document.getElementById('teacher-auth-modal').classList.remove('hidden');
+        }
+
+        function closeTeacherAuthModal() {
+            document.getElementById('teacher-auth-modal').classList.add('hidden');
+        }
+
+        function verifyTeacher() {
+            const pwd = document.getElementById('teacher-password').value.trim();
+            if (pwd === TEACHER_PASSWORD_DEFAULT) {
+                closeTeacherAuthModal();
+                openTeacherDashboard();
+            } else {
+                alert("비밀번호가 올바르지 않습니다! (기본: 1234)");
+            }
+        }
+
+        function openTeacherDashboard() {
+            document.getElementById('teacher-dashboard-modal').classList.remove('hidden');
+            fetchTeacherData();
+        }
+
+        function closeTeacherDashboard() {
+            document.getElementById('teacher-dashboard-modal').classList.add('hidden');
+        }
+
+        function toggleGASHelp() {
+            const panel = document.getElementById('gas-help-panel');
+            panel.classList.toggle('hidden');
+        }
+
+        async function fetchTeacherData() {
+            const container = document.getElementById('dashboard-content');
+            container.innerHTML = `<div class="text-center py-8 text-gray-500 font-bold text-sm"><i class="fa-solid fa-spinner fa-spin mr-1"></i> 구글 시트에서 결과를 불러오는 중...</div>`;
+
+            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_SCRIPT_ID")) {
+                container.innerHTML = `
+                    <div class="bg-amber-50 border border-amber-300 p-4 rounded-xl text-center space-y-2">
+                        <p class="font-bold text-amber-900 text-sm">⚠️ Google Apps Script URL이 설정되지 않았습니다.</p>
+                        <p class="text-xs text-amber-800">우측 상단 <b>[GAS 연동 코드]</b> 버튼을 눌러 소스코드를 복사하여 구글 시트에 적용 후, 생성된 URL을 HTML 스크립트 상단 <code>GOOGLE_SCRIPT_URL</code>에 붙여넣어 주세요.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL);
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = `<div class="text-center py-8 text-gray-400 font-bold text-sm">아직 제출된 응답이 없습니다.</div>`;
+                    return;
+                }
+
+                container.innerHTML = '';
+                // Render list in reverse chronological order (newest first)
+                data.slice().reverse().forEach(row => {
+                    const card = document.createElement('div');
+                    card.className = "bg-slate-50 border border-slate-200 p-3 sm:p-4 rounded-xl space-y-2 shadow-sm text-xs sm:text-sm";
+                    
+                    const isPerfect = (row.wrongAlphabets === '없음(만점)');
+
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center border-b pb-2">
+                            <div>
+                                <span class="font-extrabold text-slate-800 text-sm sm:text-base">${row.studentName}</span>
+                                <span class="text-slate-500 text-xs ml-1">(${row.studentClass})</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="font-bold ${isPerfect ? 'text-emerald-600' : 'text-sky-600'} text-base">${row.score}점</span>
+                                <span class="text-gray-400 text-[11px] block">${row.timestamp}</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between gap-1 text-slate-600 text-xs">
+                            <div><b>정답수:</b> ${row.correctCount} / ${row.totalQuestions} 문제</div>
+                            <div><b>복습 필요 알파벳:</b> <span class="${isPerfect ? 'text-emerald-600 font-bold' : 'text-rose-500 font-semibold'}">${row.wrongAlphabets}</span></div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+            } catch (err) {
+                console.error("Fetch Data Error:", err);
+                container.innerHTML = `<div class="text-center py-8 text-rose-500 font-bold text-sm">구글 시트 데이터를 불러오는 데 실패했습니다.<br><span class="text-xs text-gray-500 font-normal">웹앱 배포 설정 및 접근 권한(모든 사용자)을 확인해 주세요.</span></div>`;
+            }
+        }
+
+        function restartQuiz() {
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
